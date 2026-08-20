@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tetris - Wireless Controller</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+
+        /* Entire page */
+        body {
+            background-color: #222;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Title and description text */
+        h2 { margin-bottom: 20px; color: #c4c4c4; text-align: center;}
+
+        /* Input Buttons */
+        .controller-container {
+            /* background-color: #1c1c41; */
+            /* background-color: #1c4128; */
+            /* background-color: #516959; */
+            border-radius: 16px;
+            background-color: #274130;
+            padding: 25px;
+            margin-bottom: 15px;
+        }
+
+        /* D-Pad Controller Buttons */
+        .dpad-container {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            gap: 10px;
+        }
+
+        /* Default Button Style */
+        .btn {
+            background-color: #ae0202;
+            border: 2px solid #fc2929;
+            /* background-color: #444;
+            border: 2px solid #666; */
+            border-radius: 12px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Default Button Style when Pressed */
+        .btn:active, .btn.pressed {
+            /* background-color: #666; */
+            background-color: #fc2929;
+            transform: scale(0.95);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.5);
+        }
+
+        /* Hide Element */
+        .empty { visibility: hidden; }
+        
+        /* Action Controller BUttons */
+        .action-container {
+            padding-top:20px;
+            width: 260px;
+        }
+
+        /* Horizontal Button Sytle */
+        .btn-long {
+            width: 100%;
+            height: 60px;
+            /* background-color: #a000f0; */
+            background-color: #1800f0;
+            /* border-color: #c030ff; */
+            border-color: #4830ff;
+        }
+
+        /* Horizontal Button Style when Pressed */
+        /* .btn-long:active { background-color: #c030ff; } */
+        .btn-long:active, .btn-long.pressed { background-color: #4830ff; }
+        
+        /* Status Text */
+        .status { font-size: 14px; margin-top: 5px; color: #888; }
+    </style>
+</head>
+<body>
+
+    <!-- Title and description text -->
+    <h2>TETRIS PAD<br><small style="font-size:12px;">Keep window focused for keyboard inputs</small></h2>
+
+    <!-- Input Buttons -->
+     <div class="controller-container">
+
+        <!-- D-Pad Controller Buttons -->
+        <div class="dpad-container">
+            <div class="empty"></div>
+            <div class="btn" id="ArrowUp" onclick="sendAction('ArrowUp')" ontouchstart="">↻</div>
+            <div class="empty"></div>
+            
+            <div class="btn" id="ArrowLeft" onclick="sendAction('ArrowLeft')" ontouchstart="">←</div>
+            <div class="empty"></div>
+            <div class="btn" id="ArrowRight" onclick="sendAction('ArrowRight')" ontouchstart="">→</div>
+            
+            <div class="empty"></div>
+            <div class="btn" id="ArrowDown" onclick="sendAction('ArrowDown')" ontouchstart="">↓</div>
+            <div class="empty"></div>
+        </div>
+
+        <!-- Action Controller Buttons -->
+        <div class="action-container">
+            <div class="btn btn-long" id="Space" onclick="sendAction(' ')">HARD DROP</div>
+        </div>
+    </div>
+    
+    <!-- Status Text -->
+    <div class="status" id="connection-status">Connecting to broker backend...</div>
+
+<script>
+
+// Establish connection to FastAPI
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/controller`);
+const statusDiv = document.getElementById('connection-status');
+
+// Handle Status Text when Connected from server
+ws.onopen = () => {
+    statusDiv.innerText = "Connected & Active!";
+    statusDiv.style.color = "#00ff00";
+};
+
+// Handle Status Text when Disconnected from server
+ws.onclose = () => {
+    statusDiv.innerText = "Disconnected from backend server.";
+    statusDiv.style.color = "#ff0000";
+};
+
+// Communicate actions to WebSocket
+function sendAction(keyStroke) {
+    if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: keyStroke }));
+    } else {
+        console.warn("WebSocket is not open. Action dropped:", keyStroke);
+    }
+}
+
+// Helper function to map event.key to HTML element IDs
+function getButtonElement(key) {
+    if (key === ' ') return document.getElementById('Space');
+    return document.getElementById(key);
+}
+
+// Controls which buttons can be held down or not.
+const ALLOW_HOLD = {
+    'ArrowLeft': true,
+    'ArrowRight': true,
+    'ArrowDown': false,
+    'ArrowUp': false,
+    ' ': false
+};
+
+// Intercept key bindings
+window.addEventListener('keydown', (event) => {
+    const validKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
+    if (validKeys.includes(event.key)) {
+        event.preventDefault();
+        const btn = getButtonElement(event.key);
+        if (btn) {
+            if (!btn.classList.contains('pressed')) {
+                btn.classList.add('pressed');
+                sendAction(event.key);
+                // return;
+            } else if (ALLOW_HOLD[event.key]) {
+                sendAction(event.key);
+            }
+            
+
+        }
+    }
+});
+
+// Intercept key releasing
+window.addEventListener('keyup', (event) => {
+    const validKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
+    if (validKeys.includes(event.key)) {
+        const btn = getButtonElement(event.key);
+        if (btn) {
+            btn.classList.remove('pressed');
+        }
+    }
+});
+
+</script>
+</body>
+</html>

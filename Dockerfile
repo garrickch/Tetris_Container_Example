@@ -1,4 +1,4 @@
-# Example Production Dockerfile
+# Example Production Dockerfile (Example, not meant to be used)
 
 
 FROM python:3.12-slim AS builder

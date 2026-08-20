@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tetris - Game Board</title>
+    <style>
+
+        /* Entire page */
+        body {
+            background-color: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Score Text */
+        #score-board {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        /* Board State */
+        canvas {
+            border: 4px solid #333;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="score-board">Score: <span id="score">0</span></div>
+    <canvas id="tetris" width="240" height="400"></canvas>
+
+<script>
+
+// Declare Variables
+const canvas = document.getElementById('tetris');
+const context = canvas.getContext('2d');
+context.scale(20, 20);
+const scoreElement = document.getElementById('score');
+let score = 0;
+
+// Tetris Piece Shapes
+const SHAPES = {
+    'I': [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
+    'L': [[0,2,0],[0,2,0],[0,2,2]],
+    'J': [[0,3,0],[0,3,0],[3,3,0]],
+    'O': [[4,4],[4,4]],
+    'Z': [[5,5,0],[0,5,5],[0,0,0]],
+    'S': [[0,6,6],[6,6,0],[0,0,0]],
+    'T': [[0,7,0],[7,7,7],[0,0,0]]
+};
+
+// Control Colors of Each Shape
+const COLORS = [
+    null, '#00f0f0', '#f0a000', '#0000f0', '#f0f000', '#00f000', '#a000f0', '#f00000'
+];
+
+// Create Empty Board
+function createMatrix(w, h) {
+    const matrix = [];
+    while (h--) { matrix.push(new Array(w).fill(0)); }
+    return matrix;
+}
+const arena = createMatrix(12, 20);
+
+// Declare Player
+const player = {
+    pos: {x: 0, y: 0},
+    matrix: null
+};
+
+// Check for Collisions
+function collide(arena, player) {
+    const [m, o] = [player.matrix, player.pos];
+    for (let y = 0; y < m.length; ++y) {
+        for (let x = 0; x < m[y].length; ++x) {
+            if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Merge Piece into Board
+function merge(arena, player) {
+    player.matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value !== 0) {
+                arena[y + player.pos.y][x + player.pos.x] = value;
+            }
+        });
+    });
+}
+
+// Clear Completed Rows and Update Score
+function arenaSweep() {
+    let rowCount = 1;
+    outer: for (let y = arena.length - 1; y > 0; --y) {
+        for (let x = 0; x < arena[y].length; ++x) {
+            if (arena[y][x] === 0) { continue outer; }
+        }
+        const row = arena.splice(y, 1)[0].fill(0);
+        arena.unshift(row);
+        ++y;
+
+        score += rowCount * 10;
+        rowCount *= 2;
+    }
+    scoreElement.innerText = score;
+}
+
+// Draw the Board to Reflect the Matrix
+function drawMatrix(matrix, offset) {
+    matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value !== 0) {
+                context.fillStyle = COLORS[value];
+                context.fillRect(x + offset.x, y + offset.y, 1, 1);
+            }
+        });
+    });
+}
+
+// Creates Both the Player's Board and the Arena's Board
+function draw() {
+    context.fillStyle = '#000';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    drawMatrix(arena, {x: 0, y: 0});
+    drawMatrix(player.matrix, player.pos);
+}
+
+// Change the Player's Position if able
+function playerMove(dir) {
+    player.pos.x += dir;
+    if (collide(arena, player)) { player.pos.x -= dir; }
+}
+
+// Summon New Piece/Player and Reset if Necessary
+function playerReset() {
+    const pieces = 'ILJOZST';
+    player.matrix = SHAPES[pieces[pieces.length * Math.random() | 0]];
+    player.pos.y = 0;
+    player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+    
+    if (collide(arena, player)) {
+        arena.forEach(row => row.fill(0));
+        score = 0;
+        scoreElement.innerText = score;
+    }
+}
+
+// Lowers Player's Position One Grid if Able
+function playerDrop() {
+    player.pos.y++;
+    if (collide(arena, player)) {
+        player.pos.y--;
+        merge(arena, player);
+        playerReset();
+        arenaSweep();
+    }
+    dropCounter = 0;
+}
+
+// Drops Player's Position to Lowest Spot
+function playerHardDrop() {
+    while (!collide(arena, player)) {
+        player.pos.y++;
+    }
+    player.pos.y--;
+    merge(arena, player);
+    playerReset();
+    arenaSweep();
+    dropCounter = 0;
+}
+
+// Handle Rotation Logic
+function rotate(matrix, dir) {
+    for (let y = 0; y < matrix.length; ++y) {
+        for (let x = 0; x < y; ++x) {
+            [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+        }
+    }
+    if (dir > 0) { matrix.forEach(row => row.reverse()); } 
+    else { matrix.reverse(); }
+}
+
+// Attempts the Player's Rotation Logic
+function playerRotate(dir) {
+    const pos = player.pos.x;
+    let offset = 1;
+    rotate(player.matrix, dir);
+    while (collide(arena, player)) {
+        player.pos.x += offset;
+        offset = -(offset + (offset > 0 ? 1 : -1));
+        if (offset > player.matrix[0].length) {
+            rotate(player.matrix, -dir);
+            player.pos.x = pos;
+            return;
+        }
+    }
+}
+
+let dropCounter = 0;
+let dropInterval = 1000; // Equivalent to One Second
+let lastTime = 0;
+
+// Recursive Update Loop
+function update(time = 0) {
+    const deltaTime = time - lastTime;
+    lastTime = time;
+    dropCounter += deltaTime;
+    
+    if (dropCounter > dropInterval) { playerDrop(); }
+    draw();
+    requestAnimationFrame(update);
+}
+
+// Establish connection to FastAPI
+playerReset();
+update();
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/board`);
+
+// Handle Messages From Servers
+ws.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    const command = message.action;
+    
+    if (command === 'ArrowLeft')  playerMove(-1);
+    if (command === 'ArrowRight') playerMove(1);
+    if (command === 'ArrowDown')  playerDrop();
+    if (command === 'ArrowUp')    playerRotate(1);
+    if (command === ' ')          playerHardDrop();
+};
+
+// Handle when Disconnected from Server
+ws.onclose = () => console.log("Disconnected from Python message broker.");
+
+</script>
+</body>
+</html>

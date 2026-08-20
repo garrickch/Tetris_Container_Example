@@ -1,4 +1,4 @@
-.PHONY: clean lint test test-cov test-html mutate help
+.PHONY: clean lint test test-dx test-cov test-html help
 
 # Default argument when none are provided
 .DEFAULT_GOAL := help
@@ -10,7 +10,6 @@ help:
 	@echo "  make test       - Run the pytest test suite"
 	@echo "  make test-cov   - Run tests and display terminal coverage report"
 	@echo "  make test-html  - Run tests, generate HTML report, and serve locally"
-	@echo "  make mutate     - Run mutmut mutation testing"
 	@echo "  make clean      - Remove build, cache, test, and python artifacts"
 
 # To properly clean up the files that might get in the way of the user or other commands.
@@ -18,15 +17,14 @@ clean:
 	@echo "Cleaning up unwanted files and test artifacts..."
 	@rm -rf .pytest_cache/
 	@rm -rf .coverage *.coverage
-	@rm -rf mutants/
 	@rm -rf htmlcov/
 	@find . -type d -name "__pycache__" -exec rm -rf {} +
 	@echo "Clean complete."
 
 run:
 	@echo "Running Code"
-	@echo python -m src.project.main 
-	@python -m src.project.main || true
+	@echo python -m src.project.server 
+	@python -m src.project.server || true
 	@echo "Done"
 
 # To statically analyze the code.
@@ -45,6 +43,10 @@ test: clean
 	@./run_pytest.sh || true
 	@echo "Test Suite Complete"
 
+# To run the provided tests classes and view any outputs.
+test-dx: clean
+	python -m pytest -rP
+
 # To run the provided tests classes and view the code coverage.
 test-cov: clean
 	@echo "Running tests with terminal coverage reporting..."
@@ -59,9 +61,3 @@ test-html: clean
 	@python -m pytest --cov=src --cov-report=html --cov-branch || true
 	@echo "Starting local coverage server at http://localhost:8080/ (Press Ctrl+C to stop)..."
 	python -m http.server 8080 --directory htmlcov
-
-# To run a mutation test on the code.
-mutate: clean
-	@echo "Running mutation tests..."
-	@echo mutmut run
-	@mutmut run || true

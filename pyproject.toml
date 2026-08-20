@@ -1,6 +1,2 @@
-[tool.mutmut]
-source_paths = ["src/project/","data"]
-pytest_add_cli_args_test_selection  = ["tests"]
-
 [tool.pylint.main]
 source-roots = ["src/project/"]
