@@ -116,6 +116,7 @@ Run `pip install -r requirements.txt`
     1. Run `python -m pytest --cov=src --cov-report=html --cov-branch`  
     1. Run `python -m http.server 8080 --directory htmlcov`  
     1. In a browser go to: http://localhost:8080/  
+1. To run the tests and view any results run: `make test-dx`  
 
 ### To Statically Analyze Code:
 1. While in the root/code directory  
@@ -181,7 +182,6 @@ https://tetris.com/
 by Tetris  
 https://play.tetris.com/  
 https://tetris.com/  
-
 
 "WebSocket API (WebSockets)"  
 by Mozilla.org Contributors  

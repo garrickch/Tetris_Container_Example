@@ -6,11 +6,14 @@
 # To inform the user of the available commands.
 help:
 	@echo "Available commands:"
+	@echo "  make clean      - Remove build, cache, test, and python artifacts"
+	@echo "  make run      - Runs the main project"
 	@echo "  make lint       - Run static code analysis using pylint"
 	@echo "  make test       - Run the pytest test suite"
+	@echo "  make test-dx      - Runs the pytest test suit and view any outputs"
 	@echo "  make test-cov   - Run tests and display terminal coverage report"
 	@echo "  make test-html  - Run tests, generate HTML report, and serve locally"
-	@echo "  make clean      - Remove build, cache, test, and python artifacts"
+
 
 # To properly clean up the files that might get in the way of the user or other commands.
 clean:
