@@ -5,44 +5,101 @@
     <title>Tetris - Game Board</title>
     <style>
 
-        /* Entire page */
+        /* Entire page setup */
         body {
             background-color: #111;
             color: white;
             font-family: Arial, sans-serif;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
         }
 
-        /* Score Text */
-        #score-board {
-            font-size: 24px;
-            margin-bottom: 10px;
+        /* Flexbox wrapper holding Left and Right panels side-by-side */
+        .game-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
         }
 
-        /* Board State */
+        /* Vertical layout stack for the right side elements */
+        .main-column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Stylized Score Box at the top right */
+        #score-board {
+            background-color: #000;
+            border: 4px solid #333;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            box-sizing: border-box;
+            height: 44px;
+            width: 240px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+        }
+
+        /* Text styles inside the score box */
+        .score-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #888;
+            letter-spacing: 1px;
+            line-height: 1;
+        }
+
+        #score {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00f0f0;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1;
+            transform: translateY(1px); 
+        }
+
+        /* Style for both canvases */
         canvas {
             border: 4px solid #333;
             background-color: #000;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            display: block;
         }
+
     </style>
 </head>
 <body>
 
-    <div id="score-board">Score: <span id="score">0</span></div>
-    <canvas id="tetris" width="240" height="400"></canvas>
+    <div class="game-container">
+        <!-- Left Column: Preview -->
+        <canvas id="preview" width="80" height="460"></canvas>
+        
+        <!-- Right Column: Score Box and Main Arena -->
+        <div class="main-column">
+            <div id="score-board">
+                <div class="score-label">SCORE :</div>
+                <span id="score">0</span>
+            </div>
+            <canvas id="tetris" width="240" height="400"></canvas>
+        </div>
+    </div>
 
 <script>
 
-// Declare Variables
+// Declare Main Canvas Variables
 const canvas = document.getElementById('tetris');
 const context = canvas.getContext('2d');
 context.scale(20, 20);
+
+// New Preview Canvas Setup
+const previewCanvas = document.getElementById('preview');
+const pContext = previewCanvas.getContext('2d');
+pContext.scale(20, 20); 
 const scoreElement = document.getElementById('score');
 let score = 0;
 
@@ -76,6 +133,24 @@ const player = {
     matrix: null
 };
 
+// Queue Array to hold next 5 shapes.
+let previewQueue = [];
+
+// Helper function to pick a random shape
+function getRandomShape() {
+    const pieces = 'ILJOZST';
+    const key = pieces[pieces.length * Math.random() | 0];
+    return JSON.parse(JSON.stringify(SHAPES[key]));
+}
+
+// At start fills previewQueue with 5 random pieces
+function initQueue() {
+    previewQueue = [];
+    for (let i = 0; i < 5; i++) {
+        previewQueue.push(getRandomShape());
+    }
+}
+
 // Check for Collisions
 function collide(arena, player) {
     const [m, o] = [player.matrix, player.pos];
@@ -102,7 +177,7 @@ function merge(arena, player) {
 
 // Clear Completed Rows and Update Score
 function arenaSweep() {
-    let rowCount = 1;
+    let linesCleared = 0;
     outer: for (let y = arena.length - 1; y > 0; --y) {
         for (let x = 0; x < arena[y].length; ++x) {
             if (arena[y][x] === 0) { continue outer; }
@@ -110,31 +185,100 @@ function arenaSweep() {
         const row = arena.splice(y, 1)[0].fill(0);
         arena.unshift(row);
         ++y;
-
-        score += rowCount * 10;
-        rowCount *= 2;
+        linesCleared += 1;
+    }
+    const pointValues = {
+        1: 40,
+        2: 90,
+        3: 190,
+        4: 300
+    };
+    if (linesCleared > 0) {
+        score += pointValues[linesCleared];
     }
     scoreElement.innerText = score;
 }
 
-// Draw the Board to Reflect the Matrix
-function drawMatrix(matrix, offset) {
+// Main Board Drawing logic
+function drawMatrix(matrix, offset, ctx) {
     matrix.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value !== 0) {
-                context.fillStyle = COLORS[value];
-                context.fillRect(x + offset.x, y + offset.y, 1, 1);
+                ctx.fillStyle = COLORS[value];
+                ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
             }
         });
     });
 }
 
-// Creates Both the Player's Board and the Arena's Board
+// Renders the Preview Box
+function drawPreview() {
+    pContext.fillStyle = '#000';
+    pContext.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+    let absoluteMinY = Infinity;
+    let absoluteMaxY = -Infinity;
+    const piecesData = [];
+
+    previewQueue.forEach((matrix, index) => {
+        const slotYOffset = index * 4.5; 
+        let minX = matrix.length, maxX = -1;
+        let minY = matrix.length, maxY = -1;
+
+        matrix.forEach((row, y) => {
+            row.forEach((value, x) => {
+                if (value !== 0) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            });
+        });
+        if (maxX === -1 || maxY === -1) return;
+
+        const visualWidth = maxX - minX + 1;
+        const visualHeight = maxY - minY + 1;
+        const localXOffset = ((4 - visualWidth) / 2) - minX;
+        const localYOffset = slotYOffset + ((4 - visualHeight) / 2) - minY;
+        const localTop = localYOffset + minY;
+        const localBottom = localYOffset + minY + visualHeight;
+        
+        if (localTop < absoluteMinY) absoluteMinY = localTop;
+        if (localBottom > absoluteMaxY) absoluteMaxY = localBottom;
+        piecesData.push({ matrix, xOffset: localXOffset, yOffset: localYOffset, slotYOffset });
+    });
+
+    const totalStackHeight = absoluteMaxY - absoluteMinY;
+    const totalCanvasGridHeight = previewCanvas.height / 20; 
+    const totalLeftoverSpace = totalCanvasGridHeight - totalStackHeight;
+    const perfectGlobalYShift = (totalLeftoverSpace / 2) - absoluteMinY;
+
+    piecesData.forEach((piece, index) => {
+        const finalX = piece.xOffset;
+        const finalY = piece.yOffset + perfectGlobalYShift;
+        drawMatrix(piece.matrix, { x: finalX, y: finalY }, pContext);
+
+        if (index < 4) {
+            pContext.strokeStyle = 'rgba(255, 255, 255, 0.3)'; 
+            pContext.lineWidth = 0.05; 
+            pContext.beginPath();
+            const lineY = piece.slotYOffset + 4.25 + perfectGlobalYShift;
+            pContext.moveTo(0.5, lineY);
+            pContext.lineTo(3.5, lineY);
+            pContext.stroke();
+        }
+    });
+}
+
+
+// Creates: The Player's Board, The Arena's Board, and The Preview
 function draw() {
     context.fillStyle = '#000';
     context.fillRect(0, 0, canvas.width, canvas.height);
-    drawMatrix(arena, {x: 0, y: 0});
-    drawMatrix(player.matrix, player.pos);
+    drawMatrix(arena, {x: 0, y: 0}, context);
+    drawMatrix(player.matrix, player.pos, context);
+    drawPreview();
 }
 
 // Change the Player's Position if able
@@ -143,10 +287,13 @@ function playerMove(dir) {
     if (collide(arena, player)) { player.pos.x -= dir; }
 }
 
-// Summon New Piece/Player and Reset if Necessary
+// Summon New Piece/Player from Queue and Reset if Necessary
 function playerReset() {
-    const pieces = 'ILJOZST';
-    player.matrix = SHAPES[pieces[pieces.length * Math.random() | 0]];
+    const nextMatrix = previewQueue.shift();
+    player.matrix = JSON.parse(JSON.stringify(nextMatrix));
+    
+    previewQueue.push(getRandomShape());
+
     player.pos.y = 0;
     player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
     
@@ -154,6 +301,7 @@ function playerReset() {
         arena.forEach(row => row.fill(0));
         score = 0;
         scoreElement.innerText = score;
+        initQueue();
     }
 }
 
@@ -171,7 +319,9 @@ function playerDrop() {
 
 // Drops Player's Position to Lowest Spot
 function playerHardDrop() {
+    let rowsDropped = -1;
     while (!collide(arena, player)) {
+        rowsDropped++;
         player.pos.y++;
     }
     player.pos.y--;
@@ -179,6 +329,8 @@ function playerHardDrop() {
     playerReset();
     arenaSweep();
     dropCounter = 0;
+    score += Math.max(0, rowsDropped);
+    scoreElement.innerText = score; 
 }
 
 // Handle Rotation Logic
@@ -192,7 +344,7 @@ function rotate(matrix, dir) {
     else { matrix.reverse(); }
 }
 
-// Attempts the Player's Rotation Logic
+// Attempts the Player's Rotation Logic independently without altering the queue
 function playerRotate(dir) {
     const pos = player.pos.x;
     let offset = 1;
@@ -223,9 +375,11 @@ function update(time = 0) {
     requestAnimationFrame(update);
 }
 
-// Establish connection to FastAPI
+// Initial Function Calls
+initQueue();
 playerReset();
 update();
+
 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/board`);
 

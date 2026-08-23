@@ -2,11 +2,10 @@
 
 
 ## Coming Soon:
-- Update UI to include preview
 - GAMEOVER Screen
 
 
-## To Start Project:
+## To Clone Repo:
 
 1. If you don't already have Visual Studio Code (VSCode), download it to your computer. (https://code.visualstudio.com/)
 1. If you don't already have DockerDesktop, download it to your computer. (https://docs.docker.com/desktop/)
@@ -18,6 +17,7 @@
 1. Press: `Ctrl + Shift + P`
 1. Click Dev Containers: Reopen in Container
 1. Creates Dev Container, first time took me 74.7 seconds
+1. Once thats loaded run `cp .env.example .env` and change the third line to: "LOCALHOST=3005"
 
 
 ## To Reopen Container (Once you've already started the project):
@@ -47,25 +47,28 @@ Or Run `tree -a -f --charset=ascii`
 ### For each file:
 - **.devcontainer/**: &emsp;Handles the Dev container.  
 - **data/**: &emsp;To store any *.csv, *.json, or database files, now a placeholder.  
-- **src/**: &emsp;Contains the actual project. Including the file "server.py" which is where the project will start when running with `python -m src.project.server`.  
-- **tests/**: &emsp;Contains the tests of the project, separated since the client doesn't need them when the project is deployed.  
-- **.env**: &emsp;The Environmental Variables we are using and for security shouldn't be shared  
+- **src/**: &emsp;Contains the actual project. Including the file "server.py" which is where the project will start when running with `python -m src.project.server`. Also contains the *.svg and *.html files.  
+- **tests/**: &emsp;Contains the tests of the project, separated from src since the client doesn't need them when the project is deployed.  
+- **.env**: &emsp;The Environmental Variables we are using and for security shouldn't be shared (Not included from remote repository, will have to create your own based off of .env.example).  
 - **.env.example**: &emsp;When the project is deployed this file will include all the necessary Environmental Variables the user will need to have in their .env file.  
 - **.gitignore**: &emsp;The files that shouldn't be shared when uploaded with git.  
 - **Dockerfile**: &emsp;The Dockerfile the user will use without the unnecessary development features.  
 - **Makefile**: &emsp;Automates frequent processes, using the `make` command-line tool.  
+- **play_tetris.sh**: &emsp;Bash file that can be run with the command `./play_tetris.sh` to easily run the project.  
 - **pyproject.toml**: &emsp;Configuration file for this python project. Included to support the lint tool.  
 - **README.md**: &emsp;What you are reading right now, or at least the preview of.  
 - **requirements.txt**: &emsp;The libraries the user will need to install.  
 - **run_pylint.sh**: &emsp;Bash file that can be run with the command `./run_pylint.sh` to easily run pylint.  
 - **run_pytest.sh**: &emsp;Bash file that can be run with the command `./run_pytest.sh` to easily run pytest.  
-- **WebDesign-SVG-TetrisPythonContainer.svg**: &emsp;SVG icon used to identify project  
+- **WebDesign-SVG-TetrisPythonContainer.svg**: &emsp;SVG icon used to identify project.  
 
 
 ## Troubleshooting:
 
+1. Currently the .env file isn't included in the remote repository, so once you've cloned/forked this repo run: `cp .env.example .env` then provide each of the variables listed now in .env with a valid value (For example LOCALHOST=3005)  
+
 1. **If you get the error: failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.**  
-Just opening the Docker Desktop application fixes this error.
+Just opening the Docker Desktop application fixes this error.  
   
 1.  **If you wish to add/remove python libraries from requirements.txt to only include whats necessary, I recommend the command:**  
 `pipdeptree --warn silence | grep -E '^\w+' > requirements.txt`  
@@ -85,7 +88,7 @@ Run `pip install -r requirements.txt`
 1. Create devcontainer.json file (can use code we used)  
 1. Create Dockerfile.dev file (can use code we used)  
 1. Open DockerDesktop  
-1. Press: `Ctrl + Shift + P`  
+1. In VSCode Press: `Ctrl + Shift + P`  
 1. Click Dev Containers: Reopen in Container  
 1. Creates Dev Container, first time took me 74.7 seconds  
 1. If the root/code directory doesn't contain a file named .env:  
@@ -94,7 +97,7 @@ Run `pip install -r requirements.txt`
 
 ### To Run Project:
 1. While in the root/code directory  
-1. Run either `make run` or `python -m src.project.server`  
+1. Run either `make run` or `./play_tetris.sh` or `python -m src.project.server`  
 1. Should Output:  
     &emsp;&emsp;Running Code  
     &emsp;&emsp;python -m src.project.server  
@@ -103,7 +106,7 @@ Run `pip install -r requirements.txt`
     &emsp;&emsp;INFO:&emsp;&emsp;Application startup complete.  
     &emsp;&emsp;INFO:&emsp;&emsp;Uvicorn running on http://0.0.0.0:3005 (Press CTRL+C to quit)  
 1. Open in a web browser the URL: "http://Localhost:3005", changing the value of the environmental variable "LOCALHOST" changes the port value.  
-1. This page should link to two others:
+1. This page should link to two others (which you can open in other windows):
     1. Controller
     1. Display
 1. Play Tetris!
@@ -183,9 +186,19 @@ by Tetris
 https://play.tetris.com/  
 https://tetris.com/  
 
+"Understanding align-content , align-items, and align-self:"  
+by Ugwuanyi Chibuikem Christian  
+https://medium.com/@chrisroyalty001/understanding-css-align-content-align-items-and-align-self-998b7db0ec6a  
+https://medium.com/@chrisroyalty001  
+
 "WebSocket API (WebSockets)"  
 by Mozilla.org Contributors  
 https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API  
+https://developer.mozilla.org/en-US/  
+
+"CSS: Styling the content"  
+by Mozilla.org Contributors  
+https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Your_first_website/Styling_the_content  
 https://developer.mozilla.org/en-US/  
 
 "Development or Dev Containers in 5 minutes"  
@@ -197,6 +210,16 @@ https://www.youtube.com/@cmd_labs
 by DockerDocs  
 https://docs.docker.com/desktop/  
 https://www.docker.com/products/docker-desktop/  
+
+"Basic CSS 02 — CSS Layouts (Flexbox, Positioning, Margin/Padding)"  
+by Juwono (ジュウｵノ)  
+https://medium.com/@unosega/basic-css-02-css-layouts-flexbox-positioning-margin-padding-8fd4d86208d4  
+https://medium.com/@unosega  
+
+"CSS Box Model"  
+by w3schools  
+https://www.w3schools.com/css/css_boxmodel.asp  
+https://www.w3schools.com/  
 
 "Developing in Python with Dev Containers — Part 1: Setup"  
 by Andy Pickup  

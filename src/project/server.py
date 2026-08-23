@@ -9,9 +9,12 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 
 app = FastAPI()
+
+
 
 # Enable CORS so the separate HTML pages can connect cleanly
 app.add_middleware(
@@ -30,17 +33,13 @@ active_connections: dict[str, set[WebSocket]] = {
 
 # Declare Base Directory
 BASE_DIR = Path(__file__).resolve().parent
+app.mount("/Images", StaticFiles(directory=BASE_DIR / "Images"), name="Images")
 
 # Game Launcher HTML page
 @app.get("/")
 async def get_index():
-    return HTMLResponse(content="""
-        <h1>Tetris Game Launcher</h1>
-        <ul>
-            <li><a href="/board" target="_blank">Open Game Board Window</a></li>
-            <li><a href="/controller" target="_blank">Open Controller Window</a></li>
-        </ul>
-    """, status_code=200)
+    with open(BASE_DIR / "root.html", "r") as f:
+        return HTMLResponse(content=f.read(), status_code=200)
 
 # Board HTML page
 @app.get("/board")
