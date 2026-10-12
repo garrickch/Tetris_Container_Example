@@ -104,4 +104,4 @@ async def websocket_endpoint(websocket: WebSocket, role: str):
 if __name__ == "__main__":
     import uvicorn
     load_dotenv()
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("LOCALHOST")))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("LOCALHOST") or 8000))
